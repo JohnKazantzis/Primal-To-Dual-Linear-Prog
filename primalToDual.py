@@ -4,6 +4,59 @@ import re
 import sys
 import copy
 
+def outputtingData(minMax, dualA, w, b, dualEqin,c):
+    outFile = open("output.txt","w")
+
+    #Adding signs
+    for x in dualA:
+        for j in range(len(x)):
+            if len(x[j]) == 1:
+                x[j] = "+" + x[j]
+
+    for j in range(len(b)):
+        if len(b[j]) == 1:
+            b[j] = "+" + b[j]
+
+    for j in range(len(c)):
+        if len(c[j]) == 1:
+            c[j] = "+" + c[j]
+
+
+    #Writing min/max
+    if minMax == 1:
+        outFile.write("max ")
+    else:
+        outFile.write("min ")
+    #outFile.write("c = ")
+
+    for x in range(len(w)):
+        outFile.write(str(b[x]))
+        outFile.write(str(w[x]))
+        outFile.write(" ")
+
+    outFile.write("\ns.t\t")
+
+    #Creating the xi vars
+    n = len(dualA[0])
+    xVar = []
+    for x in range(n):
+        xVar.append("x" + str(x+1))
+
+
+    for x in range(len(dualA)):
+        for j in range(len(dualA[x])):
+            outFile.write(dualA[x][j])
+            outFile.write(xVar[j])
+            outFile.write(" ")
+        outFile.write(dualEqin[x])
+        outFile.write(" ")
+        outFile.write(c[x])
+        outFile.write("\n\t")
+
+    outFile.write("w ≥ 0")
+
+    outFile.close()
+
 def inputtingData(fileLines):
     #Storing Min or max
     minMax = re.findall("max|min",fileLines[0])
@@ -17,7 +70,6 @@ def inputtingData(fileLines):
     j=0
     fileLines[0] = re.sub("\A\s*min|max","",fileLines[0])
     c = re.findall("\s*[+-]*\s*\d*[a-zA-Z]",fileLines[0])
-    #print(zCoef)
     for x in c:
         c[j] = re.sub("x","",c[j])
         c[j] = re.sub("\s","",c[j])
@@ -34,9 +86,7 @@ def inputtingData(fileLines):
     j=0
     for y in range(1,len(fileLines)-1):
         A.append(re.findall("\s*[+-]*\s*\d*[a-zA-Z]",fileLines[y]))
-        #print(aCoef)
         for x in A[y-1]:
-            #print(aCoef[y-1][j])
             A[y-1][j] = re.sub("x","",A[y-1][j])
             A[y-1][j] = re.sub("\s","",A[y-1][j])
             if A[y-1][j] == "":
@@ -62,6 +112,12 @@ def inputtingData(fileLines):
     b = []
     for x in range(1,len(fileLines)-1):
         b.append(re.findall("[+-]*\d\d*\s*\Z",fileLines[x]))
+
+    tmpb = []
+    for x in b:
+        for j in x:
+            tmpb.append(j)
+    b = tmpb
 
     return minMax, A, c, b, Eqin
 
@@ -143,7 +199,6 @@ def PrimalToDual(minMax, A, c, b, Eqin):
     w = []
     for x in range(n):
         w.append("w" + str(x+1))
-    print(w)
 
     numOfc = len(c)
     dualA = []
@@ -153,20 +208,23 @@ def PrimalToDual(minMax, A, c, b, Eqin):
             tmpdualA.append(i[x])
         dualA.append(copy.deepcopy(tmpdualA))
         tmpdualA.clear()
-    print(dualA)
 
-    return dualA, w, minMax
+    # x>=0 -> ">="
+    dualEqin = []
+    for x in range(numOfc):
+        dualEqin.append("≥")
+    return dualA, w, minMax, dualEqin
 
 def main():
     fileLines = []
 
     if len(sys.argv) != 2:
-        print("Use python3 parser.py -h or python3 parser.py --help")
+        print("Use python3 primalToDual.py -h or python3 primalToDual.py --help")
         print("to learn how to run the script")
         exit(0)
 
     if sys.argv[1]== "-h" or sys.argv[1]== "--help":
-        print("Usage: python3 parser.py [Input File Name]")
+        print("Usage: python3 primalToDual.py [Input File Name]")
         exit(0)
 
     #Opening text file
@@ -182,9 +240,11 @@ def main():
     #Calling the function responsible for storing the data
     minMax, A, c, b, Eqin = inputtingData(fileLines)
 
-    print(minMax, A, c, b, Eqin)
-    PrimalToDual(minMax, A, c, b, Eqin)
+    dualA, w, minMax, dualEqin = PrimalToDual(minMax, A, c, b, Eqin)
 
+    outputtingData(minMax, dualA, w, b, dualEqin,c)
+
+    print("The convertion was successful please check the output.txt file")
 
 
 if __name__ == '__main__':
